@@ -1,0 +1,2 @@
+malha 5spot3:
+partition mesh: nx = ny = 6 e meshPolygon = 3. para K =  {1 0;0 1].

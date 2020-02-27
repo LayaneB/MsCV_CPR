@@ -1,0 +1,15 @@
+cl__1 = 1e+22;
+Point(1) = {0, 0, 0, cl__1};
+Point(2) = {10, 0, 0, cl__1};
+Point(3) = {10, 10, 0, cl__1};
+Point(4) = {0, 10, 0, cl__1};
+Discrete Face(5) = {};
+Physical Point(101) = {2};
+Physical Point(102) = {4};
+Physical Point(201) = {1};
+Physical Point(202) = {3};
+Physical Line(103) = {2};
+Physical Line(104) = {4};
+Physical Line(203) = {1};
+Physical Line(204) = {3};
+Physical Surface(1) = {5};

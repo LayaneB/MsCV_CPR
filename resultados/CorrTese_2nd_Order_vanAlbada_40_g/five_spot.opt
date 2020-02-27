@@ -1,0 +1,28 @@
+//--------------------------------------------------------------------
+//---------------- UNIVERSIDADE FEDERAL DE PERNAMBUCO ----------------
+//---------------- CENTRO DE TECNOLOGIA E GEOCIENCIAS ----------------
+//---------- PROGRAMA DE POS GRADUACAO EM ENGENHARIA CIVIL -----------
+//--------------------------------------------------------------------
+
+//Work developed by: Marcio Souza , Luiz E. Queiroz e Artur Castiel
+//Advisor Professors: Paulo Lyra & Darlan Carvalho
+//Create date: 2019/8/12;	hour: 20:50h
+
+//--------------------------------------------------------------------
+//This file has OPTIONS parameters. Configure GMSH environment
+
+//Type of algorithm used:
+//1 ==> [MeshAdapt]; 5 ==> [Delaunay]; 6 ==> [Frontal]
+
+Mesh.Algorithm = 1;
+
+//Type of remeshing algorithm:
+//0 ==> [No split]; 1 ==> [Automatic]
+
+Mesh.RemeshAlgorithm = 0;
+
+//Factor applied to all element sizes:
+//1 ==> [Default]
+
+Mesh.CharacteristicLengthFactor = 1.000000;
+
