@@ -1,4 +1,4 @@
-function [pressure,errorelativo,flowrate,flowresult,OP_old,b2,b3,tempo,v]=solverpressureMsMPFAD_Smoother(kmap,fonte,...
+function [pressure,errorelativo,flowrate,flowresult,OP_old,b2,b3,tempo,velocity]=solverpressureMsMPFAD_Smoother(kmap,fonte,...
     mobility,wells,S_old,V,nw,no,N,auxflag,Hesq, Kde, Kn, Kt, Ded,nflag,OP_old,S_cont)
 global w s flagboundcoarse
 % function [pressure,errorelativo,flowrate,flowresult]=solverpressure(kmap,nflagface,nflagno,fonte,...
@@ -43,44 +43,59 @@ if size(wells,2) > 1
      OP(wells(find(ref),1),:) = 0 ;
 end
  %% Precondicionador para resolver o sistema A*x=b
+% r = symrcm(TransF);
+% TransF = TransF(r,r);
 % A = M\TransF; b =M\F;
 % A = M*TransF; b =M*F;
-A = TransF; b = F;
-ac = OR * A * OP; 
-bc = OR * b; 
+% A = TransF; b = F;
+ac = OR * TransF * OP; 
+bc = OR * F; 
 %% Solução multiescala
 pc = ac\bc;
 pd = OP*pc;
 %% Suavizador
-tic 
+tinic = tic;
 if strcmp(flagSuavizador, 'on')
     if strcmp(suavizador, 'SOR')
-        L = tril(TransF, -1);
+%         L = tril(TransF, -1);
         U = triu(TransF,  1);
         D = diag(diag(TransF));
-        S = (D+Wf*L);
+        S = (D+Wf*U);
 %         M = (D+Wf*L);
 
-        if strcmp(suavizador, '2_níveis')
-            ac1 = OR * A * OP;
-            L1 = tril(ac1, -1) ;
-            U1 = triu(ac1,  1) ;
-            D1 = diag(diag(ac1)); Wc=2/3;
+        if strcmp(MetodoSuavizador, 'S_MN')
+            
+            L1 = tril(ac, -1) ;
+            U1 = triu(ac,  1) ;
+            D1 = diag(diag(ac)); 
             Sc = (D1+Wc*L1); % Suavizador na escala coarse
-            L2 = tril(A, -1) ;
-            U2 = triu(A,  1) ;
-            D2 = diag(diag(TransF)); Wf=1;
-            Sf = (D2+Wf*L2); % Suavizador na escala fina
+            Sf = S; % Suavizador na escala fina
         end
         
     elseif strcmp(suavizador, 'ILU')
-        S = ilu(A);
-        
+%         [L,U] = ilu(TransF);
+        [L,U] = ilu(TransF,struct('type','ilutp','droptol',1e-5));
+        S = L*U;
+%         [L,U] = ilu(A,struct('type','ilutp','droptol',1e-6)); % função do próprio Matlab
    
-        if strcmp(suavizador, '2_níveis')
-            Sc = ilu(ac); % Suavizador na escala coarse
-            Sf = ilu(A); % Suavizador na escala fina
+        if strcmp(MetodoSuavizador, 'S_MN')
+            [l,u] = ilu(ac,struct('type','ilutp','droptol',1e-5));
+            Sc = l*u; % Suavizador na escala coarse
+            Sf = S; % Suavizador na escala fina
         end
+    elseif strcmp(suavizador, 'GS')
+         L = tril(TransF, -1);
+%          U = triu(TransF,  1);
+         D = diag(diag(TransF));
+         S = (D+L);
+         if strcmp(MetodoSuavizador, 'S_MN')
+%             Lc = tril(ac, -1);
+            Uc = triu(ac,  1);
+            Dc = diag(diag(ac));
+            Sc = (Dc+Uc);            
+            Sf = S; % Suavizador na escala fina
+         end
+         
     end
 %% Testar esses depois
 % [pc,fl1,rr1,it1,rv1]=bicgstab(ac,bc,1e-10,1000,S); % função do próprio Matlab
@@ -92,10 +107,11 @@ end
 %% Etapa iterativa
 
 pf = pd; % Entrada da etapa iterativa 
-rf = b - A * pf; 
+rf = F - TransF * pf; 
 tol = 10^-7; v=0;
 erro=10^7;
-while max(abs(rf)) > tol
+% while max(abs(rf)) > tol
+while v < 15
     
     if strcmp(MetodoSuavizador, 'S_Multiescala')
     %--------Etapa multiescala------------
@@ -103,40 +119,61 @@ while max(abs(rf)) > tol
         dpc = ac\rc;
         dpf = OP * dpc; 
         pff = pf + dpf;
-        rff = b - A * pff;
+        rff = F - TransF * pff;
+        dpf2 = bicgstabl(TransF,rff,10^-5, 400, S);
+%         dpf2 =gmres(TransF,rff,10,10^-5, 200, S);
     %---------Etapa de Suavização---------
-
-            pf = pff + S\rff;
-      
-    elseif strcmp(MetodoSuavizador, 'S_2_níveis')
-
-       pf3 = pf + Sf\(b - A*pf);
-       pf2 = pf3 + OP*(Sc\OR)*(b - A*pf3); 
-       pf = pf2 + Sf\(b - A*pf2);
+        pf = pff + dpf2;
+    elseif strcmp(MetodoSuavizador, 'S_MN')
+        dpf = bicgstabl(TransF,rf,10^-5, 100, Sf);
+        pf3 = pf + dpf;
+        rf2 = F - TransF*pf3; rc = OR*rf2;
+        dpc = bicgstabl(ac,rc,10^-5, 100, Sc);
+        pf2 = pf3 + OP*dpc;
+        rf3 = F - TransF*pf2;
+        dpf2 = bicgstabl(TransF,rf3,10^-5, 100, Sf);
+        pf = pf2 + dpf2;
+        
+%        pf3 = pf + Sf\(F - TransF*pf);
+%        pf2 = pf3 + OP*(Sc\OR)*(F - TransF*pf3); 
+%        pf = pf2 + Sf\(F - TransF*pf2);
     elseif strcmp(MetodoSuavizador, 'Olav')
-% %--------------Olav--------------    
-       yrf = S\rf;
-       pf = pf + (OP*(ac\OR))*(rf-A*yrf)+yrf;
-%-------------Maliska---------------
-
-%     pf = (I-M*A)*pf + (I-(I-M*A))\(A*F);
+% %--------------Olav--------------     
+%--------Etapa multiescala------------
+        rc = OR * rf;
+        dp = bicgstabl(TransF,rf,10^-5, 200, S);
+        rcs = OR*TransF*dp;
+        dpc = ac\(rc-rcs);
+        dpf = OP * dpc; 
+        pff = pf + dpf;
+%         rff = F - TransF * pff;
+%         dpf2 = bicgstabl(TransF,rff,10^-5, 200, S);
+%---------Etapa de Suavização---------
+        pf = pff + dp;
+%        yrf = S\rf;
+%        pf = pf + (OP*(ac\OR))*(rf-TransF*yrf)+yrf;
+       
+    elseif strcmp(MetodoSuavizador, 'S_R')
+        dpf = bicgstabl(TransF,rf,10^-5, 200, S);
+        pf = pf + dpf;
+    
     end
-
-    rf = b - A * pf; 
+  
+    rf = F - TransF * pf; 
     
     v=v+1;
 %     if abs(rf) <= tol 
 %     if v == 30
-    erro = sqrt(sum((rf).^2));
-    if erro <= tol 
-       break 
-    end
+%     erro = sqrt(sum((rf).^2));
+%     if erro <= tol 
+%        break 
+%     end
 %   pref = load('REF_P');  
 % Linf(v) = max(abs(pref.REF_P-pf))/max(abs(pref.REF_P)); L1(v) = sum(abs(pref.REF_P-pf))/sum(abs(pref.REF_P)); L2(v) = sqrt(sum((pref.REF_P-pf).^2))/sqrt(sum((pref.REF_P).^2));
  
 end
 
-    tempo = toc;
+    tempo = toc(tinic);
     pd = pf;
 
 end

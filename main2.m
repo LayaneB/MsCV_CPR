@@ -23,7 +23,7 @@ global tol_c coord centelem elem esurn1 esurn2 nsurn1 nsurn2 bedge inedge ...
     intRegion   boundRegion GlobalBoundary H outSupport coarseElemCenter ...
     coarseningRatio wells mshfile edgesOnCoarseBoundary refCenterInCoaseElem ...
     dictionary edgesCoarseDict coarseDiricht intinterface pointloc regularEdges semiEdges ...
-    coarseedge ordem
+    coarseedge ordem vE
 %% Tolerance Settings
 tol_c = 0.00001; flagboundcoarse = 0;
 
@@ -113,7 +113,7 @@ nN = pre_CPR.eNodes; Nfp=pre_CPR.eNodesPerFace; Fmask = pre_CPR.FaceMask;
 if nE<=12, figure;meshQuad.plotVertices(pre_CPR.EtoV,pre_CPR.VX,pre_CPR.VY);title('Mesh');axis square; end 
 % Create comunication and boundary maps
 map = meshQuad.BuildMaps2Dv2(pre_CPR);
-
+vE = vert_Elem;
 % Load DG tools
 NDG = DGtoolsQuad(pre_CPR);
     Vnd=NDG.V2D; J=NDG.J;
@@ -226,7 +226,7 @@ interptype=2;
 % monofasico ---> quando deseje rodar um problema de escoamento monofásico ou
 % bifasico   ---> quando deseja rodar um problema de ecoamento bifásico ;
 % quando rodar bifásico verifique linha 46-50 do Ks_Interp_LPEW2.m
-simu='monofasico';
+simu='bifasico';
 %% escolha o tipo de erro discreto que deseja usar
 % erromethod1 ---> erro utilizado por Gao e Wu 2010
 % erromethod2 --->  ''     ''     por Lipnikov et al 2010

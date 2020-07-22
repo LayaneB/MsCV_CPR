@@ -1,4 +1,4 @@
-function [pressure,errorelativo,flowrate,flowresult,RHS_old,q]=solverpressure(kmap,fonte,...
+function [pressure,errorelativo,flowrate,flowresult,velocity,RHS_old]=solverpressure(kmap,fonte,...
     mobility,wells,S_old,V,nw,no,N,auxflag,Hesq, Kde, Kn, Kt, Ded,nflag)
 
 % function [pressure,errorelativo,flowrate,flowresult]=solverpressure(kmap,nflagface,nflagno,fonte,...
@@ -40,7 +40,7 @@ flowresult=0;
 
 pressure=M_old\RHS_old;
 
-[flowrate,flowresult]=calflowrateMPFAD(pressure,w,s,Kde,Ded,Kn,Kt,Hesq,nflag,auxflag,mobility);
+[flowrate,flowresult,velocity]=calflowrateMPFAD(pressure,w,s,Kde,Ded,Kn,Kt,Hesq,nflag,auxflag,mobility);
 
 %ooo = find(abs(flowresult) > 0.0000001)
 residuo=0;

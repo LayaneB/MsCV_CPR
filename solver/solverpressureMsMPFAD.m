@@ -19,7 +19,7 @@ wsdynamic = dynamic(pointWeight);
 
 %assembly da matriz
 [ TransF, F] = globalmatrixmpfadn( w,s, Kde, Ded, Kn, Kt, nflag, Hesq,wells,mobility,fonte);
-q = TransF;
+% q = TransF;
 %%MultiScale
 %pre condition matrix
 TransFc = TransF;

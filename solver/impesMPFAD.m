@@ -1,7 +1,7 @@
 %% IMPES
 % Implicit Pressure , Explicit Saturation
 %vpi_vec = [ 0.1 0.4 0.5 0.9 1];
-global elem coord inedge pormap elemarea bedge centelem smetodo CFL ordem; Globals2D_CPR; 
+global elem coord inedge pormap elemarea bedge centelem smetodo CFL ordem layer a2; Globals2D_CPR; 
 
 %% Saturation Preprocessor 
 [N,Fo,V,S_old,S_cont]=presaturation(wells);
@@ -69,12 +69,10 @@ while vpi_old < vpi %true
            mobility,wells,S_old,V,nw,no,N,auxflag,Hesq, Kde, Kn, Kt, Ded,nflagno);
    else
        % Solver de pressão Multiescala
+              
        [p,errorelativo,flowrate,flowresult,OP_old,b2,b3,tempo,v]=solverpressureMsMPFAD_Smoother(kmap,fonte,...
            mobility,wells,S_old,V,nw,no,N,auxflag,Hesq, Kde, Kn, Kt, Ded,nflagno,OP_old,S_cont);
-%        pref = load('REF_P');
-%        Linf(z,1) = max(abs(pref.REF_P-p))/max(abs(pref.REF_P)); L1(z,1) = sum(abs(pref.REF_P-p))/sum(abs(pref.REF_P)); L2(z,1) = sqrt(sum((pref.REF_P-p).^2))/sqrt(sum((pref.REF_P).^2));
-       tsuav(z) = tempo; iter(z) = v;  
-       z = z+1;
+       
    end
 %==================================================================================================
     %% calculo do fluxo fracional em cada elemento da malha
@@ -87,10 +85,16 @@ while vpi_old < vpi %true
     
     %% caculo do passo de tempo
     % order sempre = 1
-    if strcmp(smetodo,'FOU')
-        ordem = 1;
-    end
-    d_t=steptime(f_elem,S_old,flowrate,CFL,S_cont,auxflag,nw,no,ordem); %,order);
+    if strcmp(simu,'monofasico')
+        d_t=timestep2(S_old,influx,bflux,CFL,nw,no,inedge,bedge);
+    else
+        d_t=steptime(f_elem,S_old,flowrate,CFL,S_cont,auxflag,nw,no,ordem); %,order);
+    
+    % order sempre = 1
+%     if strcmp(smetodo,'FOU')
+%         ordem = 1;
+%     end
+%     d_t=steptime(f_elem,S_old,flowrate,CFL,S_cont,auxflag,nw,no,ordem); %,order);
    %d_t=timestep2(S_old,influx,bflux,CFL,nw,no,inedge,bedge);
     %% calculo da saturação explicito
     %nao usar - isso
@@ -106,7 +110,7 @@ while vpi_old < vpi %true
         end
         
 %===================== plot do campo de pressão e de velocidades =====================
-        if step == 1
+        if step == -1
             figure;trifcontour_plot2D(elem,coord,press); hold on;
             c=colorbar('horiz','Direction','reverse'); c.Label.String = 'Pressão';
             ut=Vnd\vx; ut(2:end,:)=0; avg=Vnd*ut; u_avg=avg(1,:);
@@ -147,7 +151,7 @@ end
 X = sprintf('Calculo do campo de saturação pelo método: %s\nPasso de tempo: %d\n ---------------------------------',smetodo,cont);
 disp(X)
         
-    
+    end    
 %% ==================== reporte de produção =====================================
     [VPI,oilrecovery,cumulateoil,watercut]=reportproduction(S_old,...
         wells,f_elem,cont,VPI,oilrecovery,cumulateoil,watercut,flowresult,d_t);
@@ -245,11 +249,15 @@ disp(X)
             end
         end
 % ==================================================================================================         
- if VPI(cont-1)>=1
+ if VPI(cont-1)>=1  % || step == 1
     break
 end
 end
+% Linf(layer,1) = max(abs(pref-p))/max(abs(pref)); L2(layer,1) = sqrt(sum((pref-p).^2))/sqrt(sum((pref).^2));
+% Linf_v(layer,1) = max(abs(vref'-v))/max(abs(vref')); L2_v(layer,1) = sqrt(sum((vref'-v).^2))/sqrt(sum((vref').^2));
+% TS(:,layer)=tsuav;  conser(layer,1) = a2; %ITER(:,layer)=iter;
 CPUt=toc/60; disp(['CPU time = ' num2str(CPUt)]);
+
 %% --------------------- Production curves ----------------------------------
 figure;
 plot(VPI,cumulateoil,'-','LineWidth',1.0); hold on

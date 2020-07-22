@@ -52,7 +52,7 @@ else
     end
 end
 %==========================================================================
-res_S = rk4a(RKs)*res_S - dt*(RHS)/pormap; %<------- ######### MUDEI AQUI:ACRESCENTEI O "/pormap" ##########
+res_S = rk4a(RKs)*res_S - dt*(RHS); 
 S = S + rk4b(RKs)*res_S; S = MLPv3(S,1); S(S<=1e-16)=0; 
 end
 case 'Euler'

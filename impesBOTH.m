@@ -13,7 +13,7 @@ switch test
 
     CFL=0.5; ordem=2; tordem=1; smetodo='cpr'; sml='off'; mov_='off'; plotfc = 'off';
     nw=2; no=2;  benchmark2= 'durlofsky'; load('-mat','oil_rec_ref.mat');
-    nameFile = 'start_fivespot.dat'; multiscale = 'on'; flagSuavizador = 'on'; 
+    nameFile = 'start_fivespot.dat'; multiscale = 'off'; flagSuavizador = 'off'; 
     suavizador = 'ILU'; MetodoSuavizador = 'S_Multiescala'; Wc = 1; Wf = 2/3;
     
         case 'barreira'  
@@ -22,6 +22,13 @@ switch test
     nw=2; no=2;  benchmark2= 'BenchTwophase4'; load('-mat','oil_rec_ref.mat');
     nameFile = 'start_fivespot_barreira.dat'; multiscale = 'on';flagSuavizador = 'on'; 
     suavizador = 'SOR'; MetodoSuavizador = 'S_Multiescala'; Wc = 1; Wf = 1;
+    
+        case 'SPE10'  
+
+    CFL=0.5; ordem=1; tordem=1; smetodo='FOU'; sml='off'; mov_='off'; plotfc = 'off';
+    nw=2; no=2;  benchmark2= 'durlofsky'; load('-mat','oil_rec_ref.mat');
+    nameFile = 'start_spe.dat'; multiscale = 'on'; flagSuavizador = 'on'; 
+    suavizador = 'GS'; MetodoSuavizador = 'S_R'; Wc = 1; Wf = 5/3;
     
 end
 % =========================================================================
@@ -56,10 +63,27 @@ copyfile('iterative/iterativeRoutine.m',superFolder)
 
  
 %% ms MPFAD
-   vpi_vec = vpi_vecF;
-   
-   impesMPFAD
- 
+  switch test
+    
+    case 'five_spot' 
+        adeqPerm
+        vpi_vec = vpi_vecF;
+        impesMPFAD
+        
+    case 'SPE10'
+        
+        global layer CPUfinal
+        CPUfinal = 0;
+        
+        for layer = 1:85
+           vpi_vec = vpi_vecF; 
+           triangular = 2; Rotacionado = 2; meshX = 60; meshY = 220;
+           SPEField
+           impesMPFAD
+           disp(layer)
+        end 
+        
+end
 
 
 %% 

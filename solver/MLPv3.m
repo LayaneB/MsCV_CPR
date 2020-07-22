@@ -1,5 +1,6 @@
 function u = MLPv3(uc,ATj)
 % Arrange input data
+global vE
 Globals2D_CPR; tol = eps;
 u=zeros(nN,nE); u(:,:)=uc;
 %% ut: modal coefficients
@@ -57,7 +58,8 @@ for e=1:nE% n Cells
     for j=viTj%Vertex
         %ind_Svi_bound=find(nod_bound==j);
         %if size(ind_Svi_bound,1)==0%IF node boundary
-        Svi = getsurnode(j);
+%         Svi = getsurnode(j);
+        Svi = find(vE(j,:));
         umin(ind_v) = min(s_avg(Svi)); umax(ind_v) = max(s_avg(Svi));
                
         qhk = [];
